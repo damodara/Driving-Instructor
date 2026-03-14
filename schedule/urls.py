@@ -6,5 +6,5 @@ from schedule.apps import ScheduleConfig
 app_name = ScheduleConfig.name
 
 urlpatterns = [
-    path("",),
+    # path("",),
 ]
