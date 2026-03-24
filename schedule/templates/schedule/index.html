@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Расписание{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Расписание занятий</h1>
+        {% if user.is_authenticated %}
+            {% if user.role == 'instructor' %}
+                <a href="{% url 'schedule:lesson_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Добавить занятие
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- Форма выбора даты -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-auto">
+                    <label for="date" class="visually-hidden">Дата</label>
+                    <input type="date" class="form-control" id="date" name="date" 
+                           value="{{ selected_date|date:"Y-m-d" }}" required>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Показать расписание</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Сетка временных слотов -->
+    {% if time_slots %}
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h3 class="card-title mb-0">Доступные слоты на {{ selected_date|date:"d.m.Y" }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    {% for slot in time_slots %}
+                        <div class="col-6 col-md-4 col-lg-3">
+                            <div class="time-slot text-center p-3 border rounded {% if slot.is_booked %}bg-light border-secondary{% elif slot.is_past %}bg-secondary bg-opacity-25 border-secondary text-muted{% else %}bg-white border-primary{% endif %}"
+                                 style="min-height: 100px;">
+                                <div class="time fw-bold fs-5 mb-2">{{ slot.time_str }}</div>
+                                {% if slot.is_booked %}
+                                    {% if slot.is_past %}
+                                        {% if slot.is_attended %}
+                                            <div class="status text-success fw-bold">Посещено</div>
+                                        {% elif slot.is_absent %}
+                                            <div class="status text-danger fw-bold">Не посетил</div>
+                                        {% else %}
+                                            <div class="status text-warning fw-bold">Прошло</div>
+                                        {% endif %}
+                                    {% elif slot.is_current_user %}
+                                        <div class="status text-primary fw-bold">Запись на урок</div>
+                                    {% else %}
+                                        <div class="status text-danger fw-bold">Занято</div>
+                                    {% endif %}
+                                    <div class="instructor text-muted small mt-1">Инструктор: {{ slot.instructor }}</div>
+                                    {% if slot.student %}
+                                        <div class="student text-muted small mt-1">Студент: {{ slot.student }}</div>
+                                    {% endif %}
+                                    <div class="action mt-2">
+                                        {% if slot.is_past %}
+                                            {% if slot.is_attended %}
+                                                <button type="button" class="btn btn-success btn-sm w-100" disabled>
+                                                    Посещено ✅
+                                                </button>
+                                            {% elif slot.is_absent %}
+                                                <button type="button" class="btn btn-danger btn-sm w-100" disabled>
+                                                    Не посетил ❌
+                                                </button>
+                                            {% else %}
+                                                <button type="button" class="btn btn-warning btn-sm w-100" disabled>
+                                                    Прошло
+                                                </button>
+                                            {% endif %}
+                                        {% elif slot.is_current_user %}
+                                            <button type="button" class="btn btn-primary btn-sm w-100" disabled>
+                                                Ваша запись
+                                            </button>
+                                        {% else %}
+                                            <button type="button" class="btn btn-secondary btn-sm w-100" disabled>
+                                                Занято
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                {% elif slot.is_past %}
+                                    <div class="status text-secondary fw-bold">Недоступно</div>
+                                    <div class="action mt-2">
+                                        <button type="button" class="btn btn-secondary btn-sm w-100" disabled>
+                                            Недоступно
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <div class="status text-success fw-bold">Свободно</div>
+                                    <div class="action mt-2">
+                                        <a href="#" class="btn btn-success btn-sm w-100" 
+                                           onclick="bookLesson('{{ slot.datetime|date:'Y-m-d H:i' }}')">
+                                            Записаться
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-calendar-x" style="font-size: 4rem; color: #6c757d;"></i>
+            <h3 class="text-muted mt-3">Нет доступных слотов</h3>
+            {% if user.is_authenticated %}
+                <p class="text-muted">На выбранную дату нет доступных временных слотов.</p>
+            {% else %}
+                <p class="text-muted">Пожалуйста, войдите в систему, чтобы увидеть расписание.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- Модальное окно для записи на занятие -->
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bookingModalLabel">Запись на занятие</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Вы действительно хотите записаться на занятие в <span id="bookingTime"></span>?</p>
+                    <form id="bookingForm" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" id="lessonDatetime" name="datetime" value="">
+                        <input type="hidden" name="duration" value="60">
+                        <!-- Инструктор будет выбран автоматически -->
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmBooking()">Подтвердить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function bookLesson(datetimeStr) {
+            // Устанавливаем время в модальное окно
+            document.getElementById('bookingTime').textContent = datetimeStr;
+            document.getElementById('lessonDatetime').value = datetimeStr;
+            
+            // Показываем модальное окно
+            var modal = new bootstrap.Modal(document.getElementById('bookingModal'));
+            modal.show();
+        }
+        
+        function confirmBooking() {
+            // Отправляем форму
+            document.getElementById('bookingForm').submit();
+        }
+        
+        // Удаляем обработчик для форм изменения статуса посещаемости
+        // Студенты не должны видеть кнопки редактирования статуса
+    </script>
+{% endblock %}

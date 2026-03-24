@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-person-circle text-primary" style="font-size: 4rem;"></i>
+                    <h2 class="my-3">Добро пожаловать, {{ user.username }}!</h2>
+                    <div class="d-flex justify-content-center align-items-center mb-4">
+                        <span class="badge bg-primary me-2"><i class="bi bi-person-badge"></i></span>
+                        <span class="fs-5">{{ user.get_role_display }}</span>
+                    </div>
+                    <p class="text-muted">Вы успешно вошли в систему. Здесь вы можете управлять своим расписанием занятий и личной информацией.</p>
+                </div>
+                <div class="card-footer bg-light text-center">
+                    <small class="text-muted">Последний вход: {{ user.last_login|date:"d.m.Y H:i" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
