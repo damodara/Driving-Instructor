@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Редактировать занятие{% else %}Создать занятие{% endif %}{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">{% if object %}Редактировать занятие{% else %}Создать занятие{% endif %}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.datetime.id_for_label }}" class="form-label">Дата и время</label>
+                            {{ form.datetime }}
+                            {% if form.datetime.errors %}
+                                <div class="text-danger">{{ form.datetime.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.student.id_for_label }}" class="form-label">Ученик</label>
+                            {{ form.student }}
+                            {% if form.student.errors %}
+                                <div class="text-danger">{{ form.student.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.duration.id_for_label }}" class="form-label">Продолжительность</label>
+                            {{ form.duration }}
+                            {% if form.duration.errors %}
+                                <div class="text-danger">{{ form.duration.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'schedule:index' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> {% if object %}Сохранить изменения{% else %}Создать занятие{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
