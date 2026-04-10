@@ -19,7 +19,10 @@ dependencies = [
     "djangorestframework (>=3.16.1,<4.0.0)",
     "python-telegram-bot[socks] (>=22.7,<23.0)",
     "django-email-users (>=2.1.0,<3.0.0)",
-    "nest-asyncio (>=1.6.0,<2.0.0)"
+    "nest-asyncio (>=1.6.0,<2.0.0)",
+    "ipykernel (>=7.2.0,<8.0.0)",
+    "gunicorn (>=23.0.0,<24.0.0)",
+    "whitenoise (>=6.8.0,<7.0.0)"
 ]
 
 
